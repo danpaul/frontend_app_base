@@ -6,7 +6,7 @@ var source = require("vinyl-source-stream");
 var reactify = require('reactify');
 
 // current bug in uglify prevents in working with vinly source stream
-// var uglify = require('gulp-uglify');
+var uglify = require('gulp-uglify');
 
 var reload = browserSync.reload;
 
@@ -19,20 +19,25 @@ gulp.task('main-build', function(){
   b.add('./app/main.jsx');
   return b.bundle()
     .pipe(source('compiled.js'))
-    // .pipe(uglify())
     .pipe(reload({stream: true}))
-    .pipe(gulp.dest('./js'));
+    .pipe(gulp.dest('./js'))
 });
+
+gulp.task('minify', function(){
+  gulp
+    .src('./js/compiled.js')
+    .pipe(uglify())
+    .pipe(gulp.dest('./js/min'))
+})
 
 gulp.task('style-build', function(){
   gulp.src('./scss/main.scss')
     .pipe(sass())
     .pipe(minifyCss())
-    // .pipe(reload({stream: true}))
     .pipe(gulp.dest('./css'))
 })
 
-gulp.task('reload-after', ['main-build'], reload);
+gulp.task('reload-after', ['main-build', 'minify'], reload);
 
 gulp.task('default', function() {
     browserSync.init({
@@ -40,7 +45,7 @@ gulp.task('default', function() {
             baseDir: "./"
         }
     });
-    gulp.start(['main-build', 'style-build']);
+    gulp.start(['main-build', 'minify', 'style-build']);
     gulp.watch('./app/**/*.*', ['reload-after']);
     gulp.watch('./scss/**/*.*', ['style-build']);
     gulp.watch("css/main.css").on('change', reload);
